@@ -33,3 +33,19 @@
 ####   
 #### 2. CONVENTIONS.md — короткие правила для тебя же: секреты только из .env; user только из request.user; чужой объект -> 404, не та роль -> 403; переходы статусов только в bookings/status.py; смена статуса и запись журнала в одной транзакции; отчёты SQL-агрегацией; миграции не редактировать; тесты только на MySQL; на каждом экране React состояния загрузки, пустого списка и ошибки.  
 > litellm.NotFoundError: Vertex_ai_betaException - b'{\n  "error": {\n    "code": 404,\n    "message": "models/gemini-2.5-pro-exp-03-25 is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",\n    "status": "NOT_FOUND"\n  }\n}\n'  
+
+# aider chat started at 2026-11-15 19:26:52
+
+> /nix/store/sx0jnbfbjqlcjd861swzw8rsvcnmqa5d-aider-chat-0.86.1/bin/aider --message /ask ответь одним словом: работает?  
+> Aider v0.86.1  
+> Model: gemini/gemini-3-flash-preview with whole edit format  
+> Git repo: .git with 33 files  
+> Repo-map: using 4096 tokens, auto refresh  
+
+#### /ask ответь одним словом: работает?  
+
+#### ответь одним словом: работает?  
+
+Yes.
+
+> Tokens: 369 sent, 2 received. Cost: $0.00019 message, $0.00019 session.  

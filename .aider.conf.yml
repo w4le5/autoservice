@@ -3,4 +3,5 @@ chat-history-file: docs/prompts/aider.chat.history.md
 input-history-file: docs/prompts/aider.input.history
 env-file: .env
 auto-commits: true
-# model: gemini/<имя>   # посмотреть: aider --list-models gemini/
+model: gemini/gemini-3-flash-preview
+weak-model: gemini/gemini-3-flash-preview
