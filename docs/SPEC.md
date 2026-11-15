@@ -130,22 +130,71 @@
     - **Errors**: `404 Not Found`, `400 Bad Request` (Missing or invalid date).
 
 ### Bookings
-- `POST /api/bookings/`: Create booking. (Client)
-    - *Errors*: `409 Conflict` (Overlap), `400 Bad Request` (Invalid data).
-- `GET /api/bookings/`: List bookings. (Client: own, Mechanic: assigned, Admin: all)
-- `GET /api/bookings/{id}/`: Detail view. (Permissions enforced)
-- `PATCH /api/bookings/{id}/status/`: Update status. (Role-based transitions)
+- `POST /api/bookings/`
+    - **Description**: Create a new booking.
+    - **Access**: Client
+    - **Errors**: `400 Bad Request`, `401 Unauthorized`, `409 Conflict` (Time slot overlap).
+- `GET /api/bookings/`
+    - **Description**: List bookings. Clients see their own; Mechanics see their assigned; Admins see all.
+    - **Access**: Authenticated
+    - **Params**: `date` (optional, filter by day).
+    - **Errors**: `401 Unauthorized`.
+- `GET /api/bookings/{id}/`
+    - **Description**: Get booking details.
+    - **Access**: Owner (Client), Assigned Mechanic, or Admin.
+    - **Errors**: `401 Unauthorized`, `404 Not Found`.
+- `PATCH /api/bookings/{id}/status/`
+    - **Description**: Update booking status (Confirm, Complete, Cancel).
+    - **Access**: Role-based (see Transitions table).
+    - **Body**: `{ "status": "..." }`
+    - **Errors**: `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `409 Conflict`.
 
 ### Admin API
-- `GET/POST/PUT/DELETE /api/admin/users/`: User management.
-- `GET/POST/PUT/DELETE /api/admin/services/`: Service management.
-- `GET/POST/PUT/DELETE /api/admin/mechanics/`: Mechanic management.
-- `GET /api/admin/audit-log/`: View all `booking_events`.
+- **Services Management**
+    - `GET /api/admin/services/`: List all services.
+    - `POST /api/admin/services/`: Create service.
+    - `GET/PUT/PATCH/DELETE /api/admin/services/{id}/`: Manage specific service.
+    - **Access**: Admin
+    - **Errors**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+- **Mechanics Management**
+    - `GET /api/admin/mechanics/`: List all mechanics.
+    - `POST /api/admin/mechanics/`: Create mechanic.
+    - `GET/PUT/PATCH/DELETE /api/admin/mechanics/{id}/`: Manage specific mechanic.
+    - **Access**: Admin
+    - **Errors**: `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+- **User Management**
+    - `GET /api/admin/users/`
+        - **Description**: List all users.
+        - **Access**: Admin
+    - `PATCH /api/admin/users/{id}/role/`
+        - **Description**: Change user role.
+        - **Access**: Admin
+        - **Body**: `{ "role": "client" | "mechanic" | "admin" }`
+    - `PATCH /api/admin/users/{id}/block/`
+        - **Description**: Toggle user `is_active` status.
+        - **Access**: Admin
+        - **Body**: `{ "is_active": boolean }`
+- **Audit Log**
+    - `GET /api/admin/audit-log/`
+        - **Description**: View action journal (all `booking_events`).
+        - **Access**: Admin
 
 ### Reports
-- `GET /api/reports/mechanic-load/`: Stats on mechanic utilization for a period.
-- `GET /api/reports/cancellations/`: Stats on cancellation rates.
-- `GET /api/reports/export-csv/`: Download report data as CSV.
+- `GET /api/reports/mechanic-load/`
+    - **Description**: Get mechanic utilization statistics for a period.
+    - **Access**: Admin
+    - **Params**: `start_date`, `end_date`.
+    - **Format**: JSON
+- `GET /api/reports/cancellations/`
+    - **Description**: Get cancellation statistics for a period.
+    - **Access**: Admin
+    - **Params**: `start_date`, `end_date`.
+    - **Format**: JSON
+- `GET /api/reports/export-csv/`
+    - **Description**: Export report data (load and cancellations) to CSV.
+    - **Access**: Admin
+    - **Params**: `start_date`, `end_date`.
+    - **Format**: CSV
 
 ## React Screens
 - **Public**: Landing (Hero + Service list), Login, Registration.
