@@ -66,14 +66,21 @@
 
 ## Booking Statuses and Transitions
 
-| From Status | To Status | Allowed Roles |
-| :--- | :--- | :--- |
-| `created` | `confirmed` | Mechanic, Admin |
-| `created` | `cancelled` | Client, Mechanic, Admin |
-| `confirmed` | `completed` | Mechanic, Admin |
-| `confirmed` | `cancelled` | Mechanic, Admin |
+### Transitions and Permissions
 
-*Terminal States*: `completed`, `cancelled`.
+| From Status | To Status | Allowed Roles | Conditions |
+| :--- | :--- | :--- | :--- |
+| `created` | `confirmed` | Mechanic, Admin | Mechanic must be the one assigned to the booking. |
+| `created` | `cancelled` | Client, Mechanic, Admin | Client must be the owner and `start_at` must be in the future. |
+| `confirmed` | `completed` | Mechanic, Admin | Mechanic must be the one assigned to the booking. |
+| `confirmed` | `cancelled` | Mechanic, Admin | Mechanic must be the one assigned to the booking. |
+
+- **Terminal States**: `completed`, `cancelled`. No further transitions allowed from these states.
+
+### Error Handling for Status Updates
+- **404 Not Found**: Attempting to update a booking that does not exist or belongs to another client (if the requester is a Client).
+- **403 Forbidden**: The user's role is not permitted to perform the requested transition (e.g., Client trying to `confirm` a booking).
+- **409 Conflict**: The requested transition is logically invalid (e.g., `completed` -> `cancelled` or `created` -> `completed`).
 
 ## API Endpoints
 
