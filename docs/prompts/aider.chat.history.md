@@ -49,3 +49,121 @@
 Yes.
 
 > Tokens: 369 sent, 2 received. Cost: $0.00019 message, $0.00019 session.  
+
+# aider chat started at 2026-11-15 19:30:58
+
+> /nix/store/sx0jnbfbjqlcjd861swzw8rsvcnmqa5d-aider-chat-0.86.1/bin/aider --message-file tasks/01-spec.md  
+> Aider v0.86.1  
+> Model: gemini/gemini-3-flash-preview with whole edit format  
+> Git repo: .git with 33 files  
+> Repo-map: using 4096 tokens, auto refresh  
+
+#### # Спецификация и правила для агента  
+#### Кода не пиши. Создай два файла.  
+####   
+#### 1. docs/SPEC.md — спецификация проекта «Запись в автосервис»:  
+#### - Стек: React (Vite), Django + DRF, MySQL 8, JWT через SimpleJWT с token_blacklist.  
+#### - Роли: client (владелец машины), mechanic (сотрудник), admin. При регистрации всегда client.  
+#### - Бронируется время механика. Особое правило: длительность записи = длительность услуги, записи одного механика не пересекаются.  
+#### - Таблицы (6 своих): users (кастомный AbstractUser с полем role), services (name, duration_min, price, is_active), mechanics (user nullable, name, specialization, bio, image_url, is_active), mechanic_services (M2M), bookings (client, mechanic, service, start_at, end_at, status, price, comment), booking_events (booking, actor, from_status, to_status, note, created_at).  
+#### - Статусы: created -> confirmed|cancelled; confirmed -> completed|cancelled; completed и cancelled конечные. Кто какой переход может делать.  
+#### - Создание брони: transaction.atomic, первым запросом select_for_update строки механика, проверка пересечений только среди created/confirmed, конфликт -> 409.  
+#### - Опиши API (auth, каталог, брони клиента, панель механика, админ, отчёт + CSV, журнал), коды ошибок, экраны React, демо-данные (seed), вне рамок (оплата, email, деплой).  
+####   
+#### 2. CONVENTIONS.md — короткие правила для тебя же: секреты только из .env; user только из request.user; чужой объект -> 404, не та роль -> 403; переходы статусов только в bookings/status.py; смена статуса и запись журнала в одной транзакции; отчёты SQL-агрегацией; миграции не редактировать; тесты только на MySQL; на каждом экране React состояния загрузки, пустого списка и ошибки.  
+
+I will create the two requested files: `docs/SPEC.md` containing the project specification and `CONVENTIONS.md` containing the development rules.
+
+docs/SPEC.md
+```
+# Project Specification: Car Service Booking System
+
+## Tech Stack
+- **Frontend**: React (Vite)
+- **Backend**: Django + Django REST Framework (DRF)
+- **Database**: MySQL 8
+- **Authentication**: JWT via `djangorestframework-simplejwt` with `token_blacklist` enabled.
+
+## Roles and Permissions
+- **Client**: Car owner. Can browse services/mechanics and book appointments. Default role upon registration.
+- **Mechanic**: Service provider. Can view their schedule and manage booking statuses.
+- **Admin**: Full access to manage services, mechanics, and view reports.
+
+## Core Logic
+- **Booking**: Users book a specific mechanic for a specific service.
+- **Duration**: The duration of a booking is exactly the `duration_min` defined in the selected service.
+- **No Overlap**: A mechanic cannot have two bookings that overlap in time.
+- **Concurrency Control**: Booking creation must use `transaction.atomic` and `select_for_update` on the Mechanic record to prevent race conditions. Overlap checks only consider `created` and `confirmed` bookings. Conflict results in a `409 Conflict` response.
+
+## Database Schema (6 Custom Tables)
+1. **users**: Custom `AbstractUser` with a `role` field (client, mechanic, admin).
+2. **services**: `name`, `duration_min`, `price`, `is_active`.
+3. **mechanics**: `user` (FK to users, nullable), `name`, `specialization`, `bio`, `image_url`, `is_active`.
+4. **mechanic_services**: M2M relationship between mechanics and services.
+5. **bookings**: `client` (FK), `mechanic` (FK), `service` (FK), `start_at`, `end_at`, `status`, `price` (snapshot at time of booking), `comment`.
+6. **booking_events**: Audit log. `booking` (FK), `actor` (FK), `from_status`, `to_status`, `note`, `created_at`.
+
+## Booking Statuses and Transitions
+- **Statuses**: `created`, `confirmed`, `completed`, `cancelled`.
+- **Transitions**:
+    - `created` -> `confirmed` (Mechanic/Admin)
+    - `created` -> `cancelled` (Client/Mechanic/Admin)
+    - `confirmed` -> `completed` (Mechanic/Admin)
+    - `confirmed` -> `cancelled` (Mechanic/Admin)
+- **Terminal States**: `completed`, `cancelled`.
+
+## API Endpoints
+- **Auth**: Register (client only), Login (JWT), Logout (blacklist), Profile.
+- **Catalog**: List active services and mechanics.
+- **Client Bookings**: Create booking, list my bookings, cancel my booking.
+- **Mechanic Panel**: List my schedule, update booking status.
+- **Admin API**: CRUD for services/mechanics, view all bookings.
+- **Reports**: Aggregated statistics (revenue, booking counts) + CSV export.
+- **Audit Log**: View `booking_events` for a specific booking.
+
+## React Screens
+- **Public**: Landing, Login, Registration.
+- **Client**: Service Catalog, Booking Form, My Bookings.
+- **Mechanic**: Dashboard (Schedule), Booking Detail.
+- **Admin**: Service Management, Mechanic Management, Global Reports.
+
+## Out of Scope
+- Payment gateway integration.
+- Email/SMS notifications.
+- Deployment configurations (CI/CD).
+```
+
+CONVENTIONS.md
+```
+# Development Conventions
+
+## Backend (Django/DRF)
+- **Secrets**: All sensitive data (keys, DB credentials) must be loaded from `.env`.
+- **Security**: 
+    - Always use `request.user` to identify the actor.
+    - Return `404 Not Found` if a user tries to access an object they don't own.
+    - Return `403 Forbidden` if a user has the wrong role for an action.
+- **Business Logic**:
+    - Status transition logic must reside in `bookings/status.py`.
+    - Every status change must be wrapped in a transaction with a corresponding `booking_events` entry.
+- **Database**:
+    - Use SQL aggregation for reports.
+    - Do not manually edit migration files.
+    - Tests must be executed against a MySQL database.
+
+## Frontend (React)
+- **UI States**: Every data-fetching component must handle:
+    1. **Loading**: Spinner or skeleton.
+    2. **Empty**: Message when no data is returned.
+    3. **Error**: User-friendly error message.
+- **API**: Use a centralized Axios instance or similar for JWT handling.
+```
+
+> Tokens: 1.6k sent, 1.0k received. Cost: $0.0038 message, $0.0038 session.  
+> docs/SPEC.md  
+> Create new file? (Y)es/(N)o [Yes]: y  
+> CONVENTIONS.md  
+> Create new file? (Y)es/(N)o [Yes]: y  
+> Applied edit to docs/SPEC.md  
+> Applied edit to CONVENTIONS.md  
+> Commit 3a6a6e9 docs: add project specification and development conventions  
