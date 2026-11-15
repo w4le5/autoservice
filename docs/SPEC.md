@@ -197,16 +197,53 @@
     - **Format**: CSV
 
 ## React Screens
-- **Public**: Landing (Hero + Service list), Login, Registration.
-- **Client**: Mechanic Catalog (Search/Filter), Booking Form (Date/Time picker), My Bookings (List + Cancel).
-- **Mechanic**: Dashboard (Daily Schedule), Booking Detail (Status update buttons).
-- **Admin**: User Management, Service Management, Mechanic Management, Global Audit Log, Reports Dashboard.
+
+All screens must implement:
+- **Loading State**: Spinner or Skeleton loaders while fetching data.
+- **Empty State**: Friendly message when no data is returned (e.g., "No mechanics found").
+- **Error State**: Alert or notification showing the error message from the API.
+
+### 1. Authentication
+- **Login**: Form (username, password).
+    - *States*: Submitting (disabled button), Error (invalid credentials).
+- **Registration**: Form (username, email, password, names).
+    - *States*: Submitting, Error (validation messages).
+
+### 2. Client Screens
+- **Mechanic Catalog**: Search bar, Service filter, Paginated list of mechanic cards.
+    - *States*: Skeleton cards while loading, "No mechanics match your search" empty state.
+- **Mechanic Profile & Booking**: Mechanic details (bio, specialization) + Date/Time picker showing availability.
+    - *States*: Loading availability, Error (404 if mechanic inactive), Success/Conflict feedback on booking submission.
+- **My Bookings**: List of user's bookings with status badges and "Cancel" button for eligible bookings.
+    - *States*: Loading list, "You have no bookings yet" empty state.
+
+### 3. Mechanic Screens
+- **Daily Schedule**: List of bookings assigned to the mechanic for the selected date.
+    - *States*: Loading, "No bookings for this day" empty state.
+- **Booking Management**: Detail view of a booking with action buttons (Confirm, Complete, Cancel) based on current status.
+    - *States*: Updating status (loading), Error (403/409).
+
+### 4. Admin Screens
+- **Admin Dashboard**: Tabs for Users, Services, and Mechanics management.
+    - *States*: Loading data for each tab, Empty lists, CRUD error feedback.
+- **Reports Page**: Date range picker, visualization of mechanic load and cancellation rates.
+    - *States*: Loading report, Error (invalid range), CSV download trigger.
+- **Audit Log (Action Journal)**: Table of `booking_events` showing who changed what and when.
+    - *States*: Loading, Empty log, Error.
 
 ## Demo Data (Seed)
-- 1 Admin user.
-- 1 Mechanic user + 1 Client user.
-- 20 Mechanics total (some with associated users, some without).
-- 30+ Bookings across various statuses and dates.
+
+The system includes a management command `python manage.py seed` to populate the database with:
+- **Users**:
+    - 1 Admin (`admin` / `admin`)
+    - 1 Mechanic (`mechanic` / `password`)
+    - 1 Client (`client` / `password`)
+- **Mechanics**: 20 mechanic profiles with varied specializations and bios.
+- **Services**: 5-10 services (e.g., Oil Change, Brake Repair, Engine Diagnostics) with different durations and prices.
+- **Bookings**: 30+ records distributed across:
+    - Different statuses: `created`, `confirmed`, `completed`, `cancelled`.
+    - Different timeframes: Past (completed/cancelled), Today (confirmed/created), Future (created).
+    - Various clients and mechanics.
 
 ## Backend Test Plan (15+ Tests)
 1.  **Auth**: Successful registration of a client.
