@@ -85,16 +85,49 @@
 ## API Endpoints
 
 ### Auth
-- `POST /api/auth/register/`: Client registration. (Public)
-- `POST /api/auth/login/`: Obtain JWT tokens. (Public)
-- `POST /api/auth/refresh/`: Refresh JWT token. (Public)
-- `POST /api/auth/logout/`: Blacklist refresh token. (Authenticated)
-- `GET /api/auth/me/`: Current user profile. (Authenticated)
+- `POST /api/auth/register/`
+    - **Description**: Register a new client user.
+    - **Access**: Public
+    - **Errors**: `400 Bad Request` (Validation errors, e.g., username taken).
+- `POST /api/auth/login/`
+    - **Description**: Obtain JWT access and refresh tokens.
+    - **Access**: Public
+    - **Errors**: `401 Unauthorized` (Invalid credentials).
+- `POST /api/auth/refresh/`
+    - **Description**: Refresh the access token using a refresh token.
+    - **Access**: Public
+    - **Errors**: `401 Unauthorized` (Invalid or expired refresh token).
+- `POST /api/auth/logout/`
+    - **Description**: Blacklist the refresh token.
+    - **Access**: Authenticated
+    - **Errors**: `401 Unauthorized`, `400 Bad Request` (Invalid token).
+- `GET /api/auth/me/`
+    - **Description**: Get current user profile details.
+    - **Access**: Authenticated
+    - **Errors**: `401 Unauthorized`.
 
 ### Catalog
-- `GET /api/mechanics/`: List active mechanics.
-    - *Params*: `search` (name/specialization), `service_id` (filter), `page`, `date` (to check availability).
-    - *Response*: Paginated list with mechanic details and busy slots for the requested `date`.
+- `GET /api/services/`
+    - **Description**: List all active services.
+    - **Access**: Public
+    - **Errors**: None.
+- `GET /api/mechanics/`
+    - **Description**: List active mechanics with optional search and filtering.
+    - **Access**: Public
+    - **Params**: 
+        - `search`: Search by name or specialization.
+        - `service_id`: Filter by service offered.
+        - `page`: Pagination.
+    - **Errors**: `400 Bad Request` (Invalid parameters).
+- `GET /api/mechanics/{id}/`
+    - **Description**: Get detailed information for a specific mechanic.
+    - **Access**: Public
+    - **Errors**: `404 Not Found`.
+- `GET /api/mechanics/{id}/availability/`
+    - **Description**: Get busy time slots for a mechanic on a specific date.
+    - **Access**: Public
+    - **Params**: `date` (Required, format: YYYY-MM-DD).
+    - **Errors**: `404 Not Found`, `400 Bad Request` (Missing or invalid date).
 
 ### Bookings
 - `POST /api/bookings/`: Create booking. (Client)
