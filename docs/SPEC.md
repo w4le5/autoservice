@@ -245,20 +245,32 @@ The system includes a management command `python manage.py seed` to populate the
     - Different timeframes: Past (completed/cancelled), Today (confirmed/created), Future (created).
     - Various clients and mechanics.
 
-## Backend Test Plan (15+ Tests)
-1.  **Auth**: Successful registration of a client.
-2.  **Auth**: Login returns valid access/refresh tokens.
-3.  **Auth**: Refresh token generates new access token.
-4.  **Auth**: Logout blacklists the refresh token.
-5.  **Catalog**: Filter mechanics by service ID.
-6.  **Catalog**: Search mechanics by name.
-7.  **Booking**: Create booking calculates correct `end_at`.
-8.  **Booking**: Create booking snapshots the current service price.
-9.  **Concurrency**: Prevent two bookings for the same mechanic at the same time (409).
-10. **Status**: Mechanic can confirm a `created` booking.
-11. **Status**: Client can cancel their own `created` booking.
-12. **Status**: Prevent invalid transition (e.g., `created` -> `completed`).
-13. **Permissions**: Client cannot view another client's booking (404).
-14. **Admin**: Admin can create a new service.
-15. **Reports**: Mechanic load report returns correct counts.
-16. **Audit**: Changing status creates a `booking_event` record.
+## Backend Test Plan
+
+### Authentication & JWT
+1.  **Registration**: Successful client registration creates a user with 'client' role.
+2.  **Login**: Valid credentials return both `access` and `refresh` tokens.
+3.  **Token Rotation**: Using a `refresh` token returns a new pair; the old `refresh` token is invalidated.
+4.  **Logout**: Blacklists the `refresh` token; subsequent refresh attempts fail with 401.
+5.  **Unauthorized Access**: Accessing protected endpoints without a token returns 401.
+
+### Permissions & Access Control
+6.  **Role Restriction**: A user with 'client' role receives 403 when accessing `/api/admin/*` endpoints.
+7.  **Object Isolation**: Client A receives 404 (or 403) when trying to view or patch a booking belonging to Client B.
+8.  **Mechanic Isolation**: Mechanic A receives 403 when trying to confirm a booking assigned to Mechanic B.
+
+### Booking Logic & Constraints
+9.  **Duration Calculation**: Creating a booking for a 60-min service at 10:00 correctly sets `end_at` to 11:00.
+10. **Overlap Prevention**: Attempting to book 10:30-11:30 for a mechanic who is busy 10:00-11:00 returns 409 Conflict.
+11. **Back-to-Back Booking**: Booking 11:00-12:00 for a mechanic who finishes another job at 11:00 is successful (no gap required).
+12. **Cancelled Slot Re-use**: A slot previously occupied by a `cancelled` booking is available for new bookings.
+
+### Status Transitions
+13. **Valid Flow**: Mechanic can transition a booking from `created` to `confirmed`.
+14. **Invalid Transition**: Attempting to transition `created` directly to `completed` returns 409 Conflict.
+15. **Terminal State Protection**: Attempting to transition a `cancelled` or `completed` booking to any other status returns 409.
+
+### Concurrency & Reports
+16. **Race Condition**: Sending 10 simultaneous requests for the same mechanic/slot results in exactly 1 success (201) and 9 failures (409).
+17. **Report Accuracy**: Mechanic load report correctly aggregates hours worked and cancellation counts for the specified period.
+18. **Audit Logging**: Every status change via `PATCH` creates a corresponding entry in the `booking_events` table.
