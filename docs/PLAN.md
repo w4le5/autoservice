@@ -10,59 +10,73 @@
 - [ ] **Task 2: Custom User Model & Auth**
     - Implement custom `User` model with `role` (client, mechanic, admin).
     - Configure `djangorestframework-simplejwt` with token blacklisting.
-    - Create Register (client only) and Login endpoints.
-    - *Verification*: Register a user and obtain JWT tokens via `/api/token/`.
+    - Create endpoints: `/api/auth/register/`, `/api/auth/login/`, `/api/auth/refresh/`, `/api/auth/logout/`, `/api/auth/me/`.
+    - *Tests*: Unit tests for registration, login, refresh, logout, and profile retrieval.
+    - *Verification*: Register a user and obtain JWT tokens via `/api/auth/login/`.
 
 - [ ] **Task 3: Database Models**
     - Implement models: `Service`, `Mechanic`, `Booking`, `BookingEvent`.
     - Setup M2M relationship for `mechanic_services`.
     - Run migrations.
+    - *Tests*: Unit tests for model constraints and relationships.
     - *Verification*: Check MySQL tables to ensure all 6 custom tables and fields exist.
 
 - [ ] **Task 4: Demo Data Seeding**
-    - Create a management command `seed_db` to populate services, mechanics, and users.
-    - *Verification*: Run `python manage.py seed_db` and verify data in Django Admin.
+    - Create a management command `seed` to populate the database.
+    - Requirements: 1 Admin, 1 Mechanic user, 1 Client user, 20 Mechanic profiles, 30+ Bookings across all statuses.
+    - *Verification*: Run `python manage.py seed` and verify data in Django Admin.
 
 ## Phase 2: Core Booking Logic
-- [ ] **Task 5: Catalog API**
-    - Create read-only endpoints for active Services and Mechanics.
-    - *Verification*: `GET /api/services/` and `GET /api/mechanics/` return filtered active records.
+- [ ] **Task 5: Mechanic Catalog API**
+    - Create endpoints for active Mechanics with search (name/specialization), filtering by service, and pagination.
+    - Implement availability logic (busy slots for a specific date).
+    - *Tests*: Unit tests for search, filtering, and availability calculation.
+    - *Verification*: `GET /api/mechanics/` returns filtered records with busy slots.
 
 - [ ] **Task 6: Basic Booking Creation**
     - Implement `POST /api/bookings/` for clients.
     - Calculate `end_at` based on service duration.
     - Snapshot the price.
+    - *Tests*: Unit tests for booking creation and price snapshotting.
     - *Verification*: Create a booking and check if `end_at` and `price` are correctly saved.
 
 - [ ] **Task 7: Concurrency & Overlap Control**
     - Implement `transaction.atomic` and `select_for_update` on the Mechanic record.
-    - Add logic to prevent overlapping bookings for the same mechanic (considering `created` and `confirmed` statuses).
-    - *Verification*: Run a concurrent test script; second overlapping request must return `409 Conflict`.
+    - Add logic to prevent overlapping bookings for the same mechanic.
+    - Create a script `test_concurrency.py` to send 10 parallel requests for the same slot (expect 1x201 and 9x409).
+    - *Tests*: Unit tests for overlap prevention logic.
+    - *Verification*: Concurrency script results match expectations.
 
 - [ ] **Task 8: Status Transition Logic**
-    - Create `bookings/status.py` to house transition rules.
-    - Implement status update endpoint with `booking_events` logging within a transaction.
-    - *Verification*: Attempt invalid transition (e.g., `created` -> `completed`) and ensure it fails.
+    - Implement `PATCH /api/bookings/{id}/status/` with role-based transition rules.
+    - Implement `booking_events` logging for every status change within a transaction.
+    - *Tests*: Unit tests for all valid and invalid status transitions.
+    - *Verification*: Attempt invalid transition (e.g., `created` -> `completed`) and ensure it fails with 409.
 
 - [ ] **Task 9: Lists & Permissions**
     - Implement filtered booking lists: Client sees own, Mechanic sees assigned, Admin sees all.
-    - Enforce `404` for unauthorized access to specific booking IDs.
+    - Enforce object-level permissions (404 for unauthorized access to specific booking IDs).
+    - *Tests*: Unit tests for role-based access control and object isolation.
     - *Verification*: Log in as Client A and try to access Client B's booking detail; should return 404.
 
 ## Phase 3: Admin & Reporting
 - [ ] **Task 10: Admin Management API**
-    - Create CRUD endpoints for Services and Mechanics (Admin only).
-    - *Verification*: Admin can create a new service; Mechanic/Client gets `403 Forbidden`.
+    - Create CRUD endpoints for Services and Mechanics.
+    - Implement User Management: list users, change roles, toggle `is_active` (block).
+    - Implement Global Audit Log (Action Journal) view for `booking_events`.
+    - *Tests*: Unit tests for admin-only access and user management actions.
+    - *Verification*: Admin can block a user or change a role via API.
 
 - [ ] **Task 11: Reports & Aggregation**
-    - Implement SQL aggregation for revenue and booking counts.
-    - Create CSV export endpoint for reports.
-    - *Verification*: `GET /api/reports/revenue/` returns correct totals; CSV file downloads with data.
+    - Implement reports for Mechanic Load (utilization) and Cancellation counts for a period.
+    - Create CSV export endpoint for report data.
+    - *Tests*: Unit tests for aggregation logic and date range filtering.
+    - *Verification*: `GET /api/reports/mechanic-load/` returns correct stats; CSV file downloads with data.
 
 ## Phase 4: Frontend Development
 - [ ] **Task 12: Frontend Skeleton**
     - Initialize Vite + React project.
-    - Setup Axios instance with JWT handling.
+    - Setup Axios instance with JWT handling (interceptors for refresh/logout).
     - Setup React Router.
     - *Verification*: App renders and can make a basic request to the backend.
 
@@ -86,7 +100,7 @@
     - *Verification*: Client sees their history and can cancel a `created` booking.
 
 - [ ] **Task 16: Mechanic Dashboard**
-    - Create schedule view for mechanics.
+    - Create schedule view for mechanics (daily bookings).
     - Implement status update buttons (Confirm, Complete, Cancel).
     - *UI States*: Implement loading state, "no tasks for today" message, and error handling for invalid transitions.
     - *Verification*: Mechanic logs in, sees assigned tasks, and changes status to `confirmed`.
